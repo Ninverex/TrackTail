@@ -50,7 +50,9 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
+                
             )
+
         },
         bottomBar = {
             NavigationBar(
