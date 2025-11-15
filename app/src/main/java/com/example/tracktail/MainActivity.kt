@@ -37,6 +37,7 @@ fun MainScreenPreview() {
         MainScreen()
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -49,10 +50,17 @@ fun MainScreen() {
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-                
+                ),
+                actions = {
+                    IconButton(onClick = { selectedItem = 3 }) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Ustawienia",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
             )
-
         },
         bottomBar = {
             NavigationBar(
@@ -89,19 +97,6 @@ fun MainScreen() {
                     label = { Text("Pets") },
                     selected = selectedItem == 2,
                     onClick = { selectedItem = 2 },
-                    alwaysShowLabel = true,
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                        unselectedIconColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                        selectedTextColor = MaterialTheme.colorScheme.onPrimary,
-                        unselectedTextColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
-                    )
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Ustawienia") },
-                    label = { Text("Settings") },
-                    selected = selectedItem == 3,
-                    onClick = { selectedItem = 3 },
                     alwaysShowLabel = true,
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.onPrimary,
