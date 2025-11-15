@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Settings
 import com.example.tracktail.ui.theme.TrackTailTheme
 import com.example.tracktail.screens.PetDataScreen
+import com.example.tracktail.screens.WalkScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,7 +109,6 @@ fun MainScreen() {
             }
         },
         content = { innerPadding ->
-            // Główna zawartość ekranu w zależności od wybranego przycisku
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -116,7 +116,7 @@ fun MainScreen() {
                 contentAlignment = Alignment.Center
             ) {
                 when (selectedItem) {
-                    0 -> Text("Ekran Spaceru GPS", style = MaterialTheme.typography.titleMedium)
+                    0 -> WalkScreen()
                     1 -> Text("Ekran Przypomnień", style = MaterialTheme.typography.titleMedium)
                     2 -> PetDataScreen()
                     3 -> Text("Ekran Ustawień", style = MaterialTheme.typography.titleMedium)
