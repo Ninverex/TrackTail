@@ -9,6 +9,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraManager
 import android.location.Location
+import android.media.MediaPlayer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.tracktail.R
 import com.example.tracktail.data.models.Walk
 import com.example.tracktail.data.models.WalkPoint
 import com.example.tracktail.data.repositories.WalkRepository
@@ -38,7 +40,6 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.Marker
 import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt
-import org.osmdroid.util.BoundingBox
 
 enum class WalkState {
     IDLE, TRACKING, PAUSED
@@ -52,12 +53,11 @@ fun WalkScreen() {
     var showHistory by remember { mutableStateOf(false) }
 
     if (showHistory) {
-        WalkHistoryScreen(
-        )
+        WalkHistoryScreen()
         return
     }
 
-    // --- STATES ---
+    // STATES
     var walkState by remember { mutableStateOf(WalkState.IDLE) }
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -74,16 +74,19 @@ fun WalkScreen() {
     var currentLocation by remember { mutableStateOf<Location?>(null) }
     var walkStartTime by remember { mutableLongStateOf(0L) }
 
-    // Light + Flashlight
+
     var lightLevel by remember { mutableFloatStateOf(100f) }
     var isFlashlightOn by remember { mutableStateOf(false) }
     var autoFlashlight by remember { mutableStateOf(true) }
+
+    // Gwizdek - MediaPlayer
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted -> hasLocationPermission = isGranted }
 
-    // Light sensor
+    // Czujnik światła
     DisposableEffect(walkState) {
         if (walkState == WalkState.TRACKING) {
             val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -134,7 +137,7 @@ fun WalkScreen() {
         }
     }
 
-    // Location tracking
+    // Śledzenie lokalizacji
     DisposableEffect(walkState, hasLocationPermission) {
         if (walkState == WalkState.TRACKING && hasLocationPermission) {
             val fused = LocationServices.getFusedLocationProviderClient(context)
@@ -175,22 +178,21 @@ fun WalkScreen() {
         } else onDispose {}
     }
 
-    // MAIN UI
+    // Główne UI
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // --- MAPA ---
+        //  Mapa
         MapViewComposable(
             currentLocation = currentLocation,
             routePoints = routePoints
         )
 
-        // --- PANEL STEROWANIA NAD MAPĄ ---
+        //  Panel nad mapą
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
         ) {
-
             ControlPanel(
                 walkState = walkState,
                 distance = distance,
@@ -236,11 +238,11 @@ fun WalkScreen() {
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
             ) {
-                Text("📜 Historia")
+                Text("Historia")
             }
         }
 
-        // --- KARTKA ŚWIATŁA ---
+        // Światło - karta
         if (walkState == WalkState.TRACKING) {
             Card(
                 modifier = Modifier
@@ -262,12 +264,46 @@ fun WalkScreen() {
                     modifier = Modifier.padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(if (isFlashlightOn) "🔦 ON" else "🔦 OFF")
+                    Text(if (isFlashlightOn) "ON" else "OFF")
                     Text("${lightLevel.toInt()} lux")
                     if (!autoFlashlight)
                         Text("Manual", color = MaterialTheme.colorScheme.tertiary)
                 }
             }
+
+            // Gwizdek - karta
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                ),
+                onClick = {
+                    // Zwolnij poprzedni odtwarzacz
+                    mediaPlayer?.release()
+
+                    // Odtwórz dźwięk
+                    mediaPlayer = MediaPlayer.create(context, R.raw.whistle).apply {
+                        setOnCompletionListener { it.release() }
+                        start()
+                    }
+                }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("📢", fontSize = 28.sp)
+                }
+            }
+        }
+    }
+
+    // Zwolnij MediaPlayer przy wyjściu z ekranu
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer?.release()
         }
     }
 }
@@ -379,28 +415,28 @@ fun MapViewComposable(
             MapView(ctx).apply {
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
-                controller.setZoom(15.0) // domyślny zoom
+                controller.setZoom(15.0)
             }
         },
         update = { map ->
             map.overlays.clear()
 
-            // === Rysowanie trasy ===
+            // Rysowanie trasy
             if (routePoints.size > 1) {
                 val polyline = Polyline().apply {
                     setPoints(routePoints.map { GeoPoint(it.latitude, it.longitude) })
-                    outlinePaint.color = "#2E7D32".toColorInt()
+                    outlinePaint.color = "#05a4e8".toColorInt()
                     outlinePaint.strokeWidth = 12f
                 }
                 map.overlays.add(polyline)
 
-                // === Centrowanie mapy na środku trasy ===
+                // Centrowanie mapy na środku trasy
                 val bounds = polyline.bounds
                 map.controller.setCenter(bounds.center)
                 map.controller.setZoom(15.0.coerceAtMost(map.maxZoomLevel))
             }
 
-            // === Bieżąca pozycja (opcjonalna) ===
+            // Bieżąca pozycja
             currentLocation?.let {
                 val point = GeoPoint(it.latitude, it.longitude)
                 val marker = Marker(map).apply {
@@ -420,7 +456,7 @@ fun MapViewComposable(
     )
 }
 
-// ---- POMOCNICZE ----
+//  Pomocnicze
 
 @Composable
 fun StatCard(label: String, value: String) {
